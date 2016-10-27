@@ -6,7 +6,7 @@
         $Credential = [System.Management.Automation.PSCredential]::Empty
     )
 
-    if ($Credential) {
+    if ($Credential -ne [System.Management.Automation.PSCredential]::Empty) {
         $connectionString = "Server=$dataSource;Database=$database;User Id=$($Credential.UserName);Password=$($Credential.GetNetworkCredential().password);"
     } else {
         $connectionString = "Data Source=$dataSource; Integrated Security=SSPI; Initial Catalog=$database"
