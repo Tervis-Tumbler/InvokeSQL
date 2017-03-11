@@ -3,7 +3,8 @@
         [string]$dataSource = ".\SQLEXPRESS",
         [string]$database = "MasterData",
         [string]$sqlCommand = $(throw "Please specify a query."),
-        $Credential = [System.Management.Automation.PSCredential]::Empty
+        $Credential = [System.Management.Automation.PSCredential]::Empty,
+        [Switch]$ConvertFromDataRow
     )
 
     if ($Credential -ne [System.Management.Automation.PSCredential]::Empty) {
@@ -21,7 +22,12 @@
     $adapter.Fill($dataSet) | Out-Null
     
     $connection.Close()
-    $dataSet.Tables 
+    
+    if ($ConvertFromDataRow) {
+        $dataSet.Tables | ConvertFrom-DataRow
+    } else {
+        $dataSet.Tables
+    }
 }
 
 function Invoke-SQLODBC {
@@ -64,3 +70,4 @@ function ConvertFrom-DataRow {
         $DataRowAsPSObject
     }
 }
+
