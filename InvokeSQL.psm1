@@ -6,28 +6,9 @@
         $Credential = [System.Management.Automation.PSCredential]::Empty,
         [Switch]$ConvertFromDataRow
     )
-
-    if ($Credential -ne [System.Management.Automation.PSCredential]::Empty) {
-        $connectionString = "Server=$dataSource;Database=$database;User Id=$($Credential.UserName);Password=$($Credential.GetNetworkCredential().password);"
-    } else {
-        $connectionString = "Data Source=$dataSource; Integrated Security=SSPI; Initial Catalog=$database"
-    }
-
-    $connection = new-object system.data.SqlClient.SQLConnection($connectionString)
-    $command = new-object system.data.sqlclient.sqlcommand($sqlCommand,$connection)
-    $connection.Open()
-    
-    $adapter = New-Object System.Data.sqlclient.sqlDataAdapter $command
-    $dataset = New-Object System.Data.DataSet
-    $adapter.Fill($dataSet) | Out-Null
-    
-    $connection.Close()
-    
-    if ($ConvertFromDataRow) {
-        $dataSet.Tables | ConvertFrom-DataRow
-    } else {
-        $dataSet.Tables
-    }
+    Write-Warning "Invoke-SQL retained for backwards compatibility, please use Invoke-MSSQL instead"
+    $ConnectionString = New-MSSQLConnectionString -Server $dataSource -Database $database -Credential $Credential
+    Invoke-SQLGeneric -DatabaseEngineClassMapName MSSQL -ConnectionString $ConnectionString -SQLCommand $sqlCommand -ConvertFromDataRow:$ConvertFromDataRow
 }
 
 function ConvertTo-MSSQLConnectionString {
@@ -79,10 +60,6 @@ function ConvertFrom-DataRow {
         $DataRowProperties = $DataRow | GM -MemberType Properties | select -ExpandProperty name
         $DataRowWithLimitedProperties = $DataRow | select $DataRowProperties
         $DataRowAsPSObject = $DataRowWithLimitedProperties | % { $_ | ConvertTo-Json | ConvertFrom-Json }
-#        if($DataRowAsPSObject | GM | where membertype -NE "Method") {
-#            $DataRowAsPSObject
-#        }
-
         $DataRowAsPSObject
     }
 }
@@ -153,7 +130,7 @@ $DatabaseEngineClassMap = [PSCustomObject][Ordered]@{
 
 function Get-DatabaseEngineClassMap {
     param (
-        $Name
+        [Parameter(Mandatory)]$Name
     )
     $DatabaseEngineClassMap | where Name -EQ $Name
 }
@@ -201,7 +178,7 @@ function Invoke-SQLAnywhereSQL {
 }
 
 function Install-InvokeOracleSQL {
-    $ModulePath = (Get-Module -ListAvailable InvokeOracleSQL).ModuleBase
+    $ModulePath = (Get-Module -ListAvailable InvokeSQL).ModuleBase
     Set-Location -Path $ModulePath
 
     $SourceNugetExe = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe"
@@ -212,7 +189,7 @@ function Install-InvokeOracleSQL {
 }
 
 function Add-OracleManagedDataAccessType {
-    $ModulePath = (Get-Module -ListAvailable InvokeOracleSQL).ModuleBase
+    $ModulePath = (Get-Module -ListAvailable InvokeSQL).ModuleBase
     $OracleManagedDataAccessDirectory = Get-ChildItem -Directory -Path $ModulePath | where Name -Match Oracle
 
     Add-Type -Path "$ModulePath\$OracleManagedDataAccessDirectory\lib\net40\Oracle.ManagedDataAccess.dll"
@@ -228,7 +205,6 @@ function ConvertTo-OracleConnectionString {
         [Parameter(ValueFromPipelineByPropertyName)][string]$Protocol = "TCP"
     )
     "User Id=$UserName;Password=$Password;Pooling=false;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=$Protocol)(HOST=$Host)(PORT=$Port))(CONNECT_DATA=(SERVICE_NAME=$Service_Name)));"
-
 }
 
 function Invoke-OracleSQL {
@@ -237,21 +213,10 @@ function Invoke-OracleSQL {
         [Parameter(Mandatory)][string]$SQLCommand,
         [Switch]$ConvertFromDataRow
     )
-    Add-OracleManagedDataAccessType
+    Invoke-SQLGeneric -DatabaseEngineClassMapName Oracle @PSBoundParameters
+}
 
-    $Connection = New-Object -TypeName  Oracle.ManagedDataAccess.Client.OracleConnection($ConnectionString)
-    $Command = new-object Oracle.ManagedDataAccess.Client.OracleCommand($SQLCommand,$Connection)
-    $Connection.Open()
-    
-    $Adapter = New-Object Oracle.ManagedDataAccess.Client.OracleDataAdapter $Command
-    $Dataset = New-Object System.Data.DataSet
-    $Adapter.Fill($DataSet) | Out-Null
-    
-    $Connection.Close()
-    
-    if ($ConvertFromDataRow) {
-        $DataSet.Tables | ConvertFrom-DataRow
-    } else {
-        $DataSet.Tables
-    }
+function Install-InvokeSQL {
+    Install-InvokeOracleSQL
+    Install-InvokeSQLAnywhereSQL
 }
