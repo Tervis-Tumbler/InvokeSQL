@@ -199,3 +199,59 @@ function Invoke-SQLAnywhereSQL {
     )
     Invoke-SQLGeneric @PSBoundParameters
 }
+
+function Install-InvokeOracleSQL {
+    $ModulePath = (Get-Module -ListAvailable InvokeOracleSQL).ModuleBase
+    Set-Location -Path $ModulePath
+
+    $SourceNugetExe = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe"
+    $TargetNugetExe = ".\nuget.exe"
+    Invoke-WebRequest $sourceNugetExe -OutFile $targetNugetExe
+    .\nuget.exe install Oracle.ManagedDataAccess
+    Remove-Item -Path $TargetNugetExe
+}
+
+function Add-OracleManagedDataAccessType {
+    $ModulePath = (Get-Module -ListAvailable InvokeOracleSQL).ModuleBase
+    $OracleManagedDataAccessDirectory = Get-ChildItem -Directory -Path $ModulePath | where Name -Match Oracle
+
+    Add-Type -Path "$ModulePath\$OracleManagedDataAccessDirectory\lib\net40\Oracle.ManagedDataAccess.dll"
+}
+
+function ConvertTo-OracleConnectionString {
+    param(
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)][string]$Host,
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)][string]$Port,
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)][string]$Service_Name,
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)][string]$UserName,
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)][string]$Password,
+        [Parameter(ValueFromPipelineByPropertyName)][string]$Protocol = "TCP"
+    )
+    "User Id=$UserName;Password=$Password;Pooling=false;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=$Protocol)(HOST=$Host)(PORT=$Port))(CONNECT_DATA=(SERVICE_NAME=$Service_Name)));"
+
+}
+
+function Invoke-OracleSQL {
+    param(
+        [Parameter(Mandatory)][string]$ConnectionString,
+        [Parameter(Mandatory)][string]$SQLCommand,
+        [Switch]$ConvertFromDataRow
+    )
+    Add-OracleManagedDataAccessType
+
+    $Connection = New-Object -TypeName  Oracle.ManagedDataAccess.Client.OracleConnection($ConnectionString)
+    $Command = new-object Oracle.ManagedDataAccess.Client.OracleCommand($SQLCommand,$Connection)
+    $Connection.Open()
+    
+    $Adapter = New-Object Oracle.ManagedDataAccess.Client.OracleDataAdapter $Command
+    $Dataset = New-Object System.Data.DataSet
+    $Adapter.Fill($DataSet) | Out-Null
+    
+    $Connection.Close()
+    
+    if ($ConvertFromDataRow) {
+        $DataSet.Tables | ConvertFrom-DataRow
+    } else {
+        $DataSet.Tables
+    }
+}
