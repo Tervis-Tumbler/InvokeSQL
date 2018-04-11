@@ -160,7 +160,7 @@ function Invoke-SQLGeneric {
     
     $Connection.Close()
     
-    if ($ConvertFromDataRow -and $DataSet.Tables.DataRow) {
+    if ($ConvertFromDataRow -and ($DataSet.Tables.DataRow -or $DataSet.Tables.Rows)) {
         $DataSet.Tables | ConvertFrom-DataRow
     } else {
         $DataSet.Tables
