@@ -181,18 +181,23 @@ function Install-InvokeOracleSQL {
     $ModulePath = (Get-Module -ListAvailable InvokeSQL).ModuleBase
     Set-Location -Path $ModulePath
 
-    $SourceNugetExe = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe"
-    $TargetNugetExe = ".\nuget.exe"
-    Invoke-WebRequest $sourceNugetExe -OutFile $targetNugetExe
-    .\nuget.exe install Oracle.ManagedDataAccess
-    Remove-Item -Path $TargetNugetExe
+    if ($PSVersionTable.Platform -ne "Unix") {
+        $SourceNugetExe = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe"
+        $TargetNugetExe = ".\nuget.exe"
+        Invoke-WebRequest $sourceNugetExe -OutFile $targetNugetExe
+        .\nuget.exe install Oracle.ManagedDataAccess
+        Remove-Item -Path $TargetNugetExe
+    } elseif ($PSVersionTable.Platform -eq "Unix") {
+        nuget install Oracle.ManagedDataAccess.Core -Version 2.12.0-beta2
+    }
+    
 }
 
 function Add-OracleManagedDataAccessType {
     $ModulePath = (Get-Module -ListAvailable InvokeSQL).ModuleBase
     $OracleManagedDataAccessDirectory = Get-ChildItem -Directory -Path $ModulePath | where Name -Match Oracle
-
-    Add-Type -Path "$ModulePath\$OracleManagedDataAccessDirectory\lib\net40\Oracle.ManagedDataAccess.dll"
+    $DllFile = Get-ChildItem -Path $ModulePath\$OracleManagedDataAccessDirectory\lib\ -Recurse -File
+    Add-Type -Path $DllFile.fullname
 }
 
 function ConvertTo-OracleConnectionString {
