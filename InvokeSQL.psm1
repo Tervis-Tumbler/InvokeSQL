@@ -225,3 +225,15 @@ function Install-InvokeSQL {
     Install-InvokeOracleSQL
     Install-InvokeSQLAnywhereSQL
 }
+
+function Invoke-FormatSQLArrayFromCSV{
+    param(
+        [parameter(mandatory)]$CSVPath,
+        [parameter()]$ColumnName
+    )
+    $CSV = Import-Csv -Path $CSVPath
+
+    $ItemArray = @"
+('$($CSV.LiddedItemUPC -join "','")')
+"@
+}
