@@ -1,0 +1,6 @@
+*.dll
+*.xdt
+*.transform
+*.nupkg
+Oracle.ManagedDataAccess.12.2.1100/info.txt
+Oracle.ManagedDataAccess.12.2.1100/readme.txt
