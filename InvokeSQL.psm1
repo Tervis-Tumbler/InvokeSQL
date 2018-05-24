@@ -226,14 +226,12 @@ function Install-InvokeSQL {
     Install-InvokeSQLAnywhereSQL
 }
 
-function Invoke-FormatSQLArrayFromCSV{
+function ConvertTo-SQLArrayFromCSV{
     param(
-        [parameter(mandatory)]$CSVPath,
-        [parameter()]$ColumnName
+        [parameter(mandatory)][string]$PathToCSV,
+        [parameter(mandatory)][string]$CSVColumnName
     )
-    $CSV = Import-Csv -Path $CSVPath
+    $Items = Import-Csv -Path $PathToCSV | where {$_.$CSVColumnName} | select -ExpandProperty $CSVColumnName
 
-    $ItemArray = @"
-('$($CSV.LiddedItemUPC -join "','")')
-"@
+    "('$($Items -join "','")')"
 }
