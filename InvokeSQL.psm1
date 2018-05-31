@@ -55,15 +55,168 @@ function ConvertFrom-DataRow {
         )]
         $DataRow
     )
+    begin {
+        #Based on Dave Wyatt's code https://powershell.org/forums/topic/dealing-with-dbnull/
+        $cSharp = @"
+using System;
+using System.Data;
+using System.Management.Automation;
+
+public class DBNullScrubber
+{
+    public static PSObject DataRowToPSObject(DataRow row)
+    {
+        PSObject psObject = new PSObject();
+
+        if (row != null && (row.RowState & DataRowState.Detached) != DataRowState.Detached)
+        {
+            foreach (DataColumn column in row.Table.Columns)
+            {
+                Object value = null;
+                if (!row.IsNull(column))
+                {
+                    value = row[column];
+                }
+
+                psObject.Properties.Add(new PSNoteProperty(column.ColumnName, value));
+            }
+        }
+
+        return psObject;
+    }
+}
+"@      
+    if (-not $Script:DBNullScrubberAdded) {
+            $Script:DBNullScrubberAdded = $true
+            Add-Type -TypeDefinition $cSharp -ReferencedAssemblies 'System.Data','System.Xml'
+        }   
+    }
     process {
-        $DataRowProperties = $DataRow | GM -MemberType Properties | select -ExpandProperty name
-        $DataRowWithLimitedProperties = $DataRow | select $DataRowProperties
-        $DataRowAsPSObject = $DataRowWithLimitedProperties | % { $_ | ConvertTo-Json | ConvertFrom-Json }
-        $DataRowAsPSObject
-        $DataRow |
-        ConvertTo-Json |
-        ConvertFrom-Json |
-        Select-Object -Property * -ExcludeProperty RowError, RowState, Table, HasErrors, ItemArray
+        [DBNullScrubber]::DataRowToPSObject($DataRow)
+    }
+}
+
+function ConvertFrom-DataRow4 {
+    param(
+        [Parameter(
+            Mandatory=$true, 
+            ValueFromPipeline=$true,
+            ValueFromPipelineByPropertyName=$true
+        )]
+        $DataRow
+    )
+    process {
+        $Names = $DataRow.PSObject.Properties |
+        Where-Object Name -NotIn RowError, RowState, Table, HasErrors, ItemArray |
+        Select-Object -ExpandProperty Name
+    }
+}
+
+function ConvertFrom-DataRowHashToPSCustom {
+    param(
+        [Parameter(
+            Mandatory=$true, 
+            ValueFromPipeline=$true,
+            ValueFromPipelineByPropertyName=$true
+        )]
+        $DataRow
+    )
+    process {
+        $PropertyNames = $DataRow.PSObject.Properties.Name
+        $DataRowProperties = $PropertyNames.Where({$_ -notin "RowError", "RowState", "Table", "HasErrors", "ItemArray"})
+        $Hash = [Ordered]@{}
+        foreach ($PropertyName in $DataRowProperties) {
+            $Hash.Add($PropertyName, $DataRow.$PropertyName)
+        }
+        [PSCustomObject]$Hash
+    }
+}
+
+function ConvertFrom-DataRowHashToPSCustomCSharp {
+    param(
+        [Parameter(
+            Mandatory=$true, 
+            ValueFromPipeline=$true,
+            ValueFromPipelineByPropertyName=$true
+        )]
+        $DataRow
+    )
+    begin {
+        $cSharp = @"
+using System;
+using System.Data;
+using System.Management.Automation;
+
+public class DBNullScrubber
+{
+    public static PSObject DataRowToPSObject(DataRow row)
+    {
+        PSObject psObject = new PSObject();
+
+        if (row != null && (row.RowState & DataRowState.Detached) != DataRowState.Detached)
+        {
+            foreach (DataColumn column in row.Table.Columns)
+            {
+                Object value = null;
+                if (!row.IsNull(column))
+                {
+                    value = row[column];
+                }
+
+                psObject.Properties.Add(new PSNoteProperty(column.ColumnName, value));
+            }
+        }
+
+        return psObject;
+    }
+}
+"@      
+    if (-not $Script:DBNullScrubberAdded) {
+            $Script:DBNullScrubberAdded = $true
+            Add-Type -TypeDefinition $cSharp -ReferencedAssemblies 'System.Data','System.Xml'
+        }   
+    }
+    process {
+        [DBNullScrubber]::DataRowToPSObject($DataRow)
+    }
+}
+
+function ConvertFrom-DataRow2 {
+    param(
+        [Parameter(
+            Mandatory=$true, 
+            ValueFromPipeline=$true,
+            ValueFromPipelineByPropertyName=$true
+        )]
+        $DataRow
+    )
+    process {
+        $PropertyNames = $DataRow.PSObject.Properties.Name
+        $DataRowProperties = $PropertyNames.Where({$_ -notin "RowError", "RowState", "Table", "HasErrors", "ItemArray"})
+        $Object = New-Object PSObject
+        foreach ($PropertyName in $DataRowProperties) {
+            $Property = New-Object System.Management.Automation.PSNoteProperty -ArgumentList $PropertyName, $DataRow.$PropertyName
+            $Object.PSObject.Properties.Add($Property)
+        }
+        $Object
+        
+        #$Object = '' | Select-Object $DataRowProperties
+        #foreach ($PropertyName in $DataRowProperties) {
+        #    $Object.$PropertyName = $DataRow.$PropertyName
+        #}
+        #$Object
+
+
+        
+#
+        #$DataRowWithLimitedProperties = $DataRow | select $DataRowProperties
+#
+        #$DataRowWithLimitedProperties = $DataRow | select -ExcludeProperty RowError, RowState, Table, HasErrors, ItemArray
+        #$DataRowAsPSObject = $DataRowWithLimitedProperties | % { $_ | ConvertTo-Json | ConvertFrom-Json }
+        #$DataRowAsPSObject
+
+        #$DataRow |
+        #Select-Object -Property * -ExcludeProperty RowError, RowState, Table, HasErrors, ItemArray
     }
 }
 
