@@ -49,7 +49,6 @@ function Invoke-SQLODBC {
 function ConvertFrom-DataRow {
     param(
         [Parameter(
-            Position=0, 
             Mandatory=$true, 
             ValueFromPipeline=$true,
             ValueFromPipelineByPropertyName=$true
@@ -61,6 +60,10 @@ function ConvertFrom-DataRow {
         $DataRowWithLimitedProperties = $DataRow | select $DataRowProperties
         $DataRowAsPSObject = $DataRowWithLimitedProperties | % { $_ | ConvertTo-Json | ConvertFrom-Json }
         $DataRowAsPSObject
+        $DataRow |
+        ConvertTo-Json |
+        ConvertFrom-Json |
+        Select-Object -Property * -ExcludeProperty RowError, RowState, Table, HasErrors, ItemArray
     }
 }
 
@@ -161,9 +164,9 @@ function Invoke-SQLGeneric {
     $Connection.Close()
     
     if ($ConvertFromDataRow -and ($DataSet.Tables.DataRow -or $DataSet.Tables.Rows)) {
-        $DataSet.Tables | ConvertFrom-DataRow
+        $DataSet.Tables.Rows | ConvertFrom-DataRow
     } else {
-        $DataSet.Tables
+        $DataSet.Tables.Rows
     }
 }
 
