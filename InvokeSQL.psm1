@@ -346,7 +346,6 @@ function Install-InvokeOracleSQL {
     } elseif ($PSVersionTable.Platform -eq "Unix") {
         nuget install Oracle.ManagedDataAccess.Core -Version 2.12.0-beta2
     }
-    
 }
 
 function Add-OracleManagedDataAccessType {
