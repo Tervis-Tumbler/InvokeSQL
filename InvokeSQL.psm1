@@ -318,7 +318,7 @@ function Invoke-SQLGeneric {
     
     if ($ConvertFromDataRow -and ($DataSet.Tables.DataRow -or $DataSet.Tables.Rows)) {
         $DataSet.Tables.Rows | ConvertFrom-DataRow
-    } else {
+    } elseif ($DataSet.Tables.Rows) {
         $DataSet.Tables.Rows
     }
 }
