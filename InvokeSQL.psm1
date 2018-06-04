@@ -383,10 +383,10 @@ function Install-InvokeSQL {
 
 function ConvertTo-SQLArrayFromCSV{
     param(
-        [parameter(mandatory)][string]$PathToCSV,
+        [parameter(mandatory)][PSCustomObject]$CSVObject,
         [parameter(mandatory)][string]$CSVColumnName
     )
-    $Items = Import-Csv -Path $PathToCSV | where {$_.$CSVColumnName} | select -ExpandProperty $CSVColumnName
+    $Items = $CSVObject | where {$_.$CSVColumnName} | select -ExpandProperty $CSVColumnName
 
     "('$($Items -join "','")')"
 }
