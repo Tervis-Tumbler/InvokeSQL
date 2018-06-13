@@ -364,7 +364,7 @@ function ConvertTo-OracleConnectionString {
         [Parameter(Mandatory,ValueFromPipelineByPropertyName)][string]$Password,
         [Parameter(ValueFromPipelineByPropertyName)][string]$Protocol = "TCP"
     )
-    "User Id=$UserName;Password=$Password;Pooling=false;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=$Protocol)(HOST=$Host)(PORT=$Port))(CONNECT_DATA=(SERVICE_NAME=$Service_Name)));"
+    "User Id=$UserName;Password=$Password;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=$Protocol)(HOST=$Host)(PORT=$Port))(CONNECT_DATA=(SERVICE_NAME=$Service_Name)));"
 }
 
 function Invoke-OracleSQL {
