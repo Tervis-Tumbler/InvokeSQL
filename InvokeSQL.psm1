@@ -349,10 +349,12 @@ function Install-InvokeOracleSQL {
 }
 
 function Add-OracleManagedDataAccessType {
-    $ModulePath = (Get-Module -ListAvailable InvokeSQL).ModuleBase
-    $OracleManagedDataAccessDirectory = Get-ChildItem -Directory -Path $ModulePath | where Name -Match Oracle
-    $DllFile = Get-ChildItem -Path $ModulePath\$OracleManagedDataAccessDirectory\lib\ -Recurse -File
-    Add-Type -Path $DllFile.fullname
+    if (-Not [Oracle.ManagedDataAccess.Types.INullable]) {
+        $ModulePath = (Get-Module -ListAvailable InvokeSQL).ModuleBase
+        $OracleManagedDataAccessDirectory = Get-ChildItem -Directory -Path $ModulePath | where Name -Match Oracle
+        $DllFile = Get-ChildItem -Path $ModulePath\$OracleManagedDataAccessDirectory\lib\ -Recurse -File
+        Add-Type -Path $DllFile.fullname
+    }
 }
 
 function ConvertTo-OracleConnectionString {
