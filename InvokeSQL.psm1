@@ -15,7 +15,7 @@ function ConvertTo-MSSQLConnectionString {
     param (
         [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$Server,
         [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$Database,
-        $Credential = [System.Management.Automation.PSCredential]::Empty
+        [Parameter(ValueFromPipelineByPropertyName)]$Credential = [System.Management.Automation.PSCredential]::Empty
     )
     process {
         New-MSSQLConnectionString @PSBoundParameters
