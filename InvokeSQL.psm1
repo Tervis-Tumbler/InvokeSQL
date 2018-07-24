@@ -312,7 +312,14 @@ function Invoke-SQLGeneric {
     
     $Adapter = New-Object "$NameSpace.$($ClassMap.Adapter)" $Command
     $Dataset = New-Object System.Data.DataSet
-    $Adapter.Fill($DataSet) | Out-Null
+
+    if ($Global:LogSQL) {
+        $StopWatch = [Diagnostics.Stopwatch]::StartNew()
+        $Adapter.Fill($DataSet) | Out-Null
+        $StopWatch.Stop()
+    } else {
+        $Adapter.Fill($DataSet) | Out-Null
+    }
     
     $Connection.Close()
     
@@ -321,6 +328,25 @@ function Invoke-SQLGeneric {
     } elseif ($DataSet.Tables.Rows) {
         $DataSet.Tables.Rows
     }
+
+    New-SQLCallLog -ConnectionString $ConnectionString -Command $SQLCommand -TimeSpan $StopWatch.Elapsed
+}
+
+function New-SQLCallLog {
+    param (
+        $ConnectionString,
+        $Command,
+        $TimeSpan
+    )
+    if (-not $Script:SQLCallLog) {
+        $Script:SQLCallLog = New-Object System.Collections.ArrayList
+    }
+    
+    $Script:SQLCallLog.Add(($PSBoundParameters | ConvertFrom-PSBoundParameters)) | Out-Null
+}
+
+function Get-SQLCallLog {
+    $Script:SQLCallLog
 }
 
 function Invoke-SQLAnywhereSQL {
@@ -349,7 +375,7 @@ function Install-InvokeOracleSQL {
 }
 
 function Add-OracleManagedDataAccessType {
-    if (-Not [Oracle.ManagedDataAccess.Types.INullable]) {
+    if (-not ([System.Management.Automation.PSTypeName]'Oracle.ManagedDataAccess.Types.INullable').Type) {
         $ModulePath = (Get-Module -ListAvailable InvokeSQL).ModuleBase
         $OracleManagedDataAccessDirectory = Get-ChildItem -Directory -Path $ModulePath | where Name -Match Oracle
         $DllFile = Get-ChildItem -Path $ModulePath\$OracleManagedDataAccessDirectory\lib\ -Recurse -File
