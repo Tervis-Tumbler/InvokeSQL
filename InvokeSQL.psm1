@@ -281,6 +281,14 @@ $DatabaseEngineClassMap = [PSCustomObject][Ordered]@{
     Connection = "OdbcConnection"
     Command = "OdbcCommand"
     Adapter = "OdbcDataAdapter"
+},
+[PSCustomObject][Ordered]@{
+    Name = "ASE"
+    NameSpace = "AdoNetCore.AseClient"
+    Connection = "AseConnection"
+    Command = "AseCommand"
+    Adapter = "AseDataAdapter"
+    #Add-Type -Path /usr/local/share/PackageManagement/NuGet/Packages/AdoNetCore.AseClient.0.10.1/lib/netcoreapp2.0/AdoNetCore.AseClient.dll
 }
 
 
@@ -299,7 +307,7 @@ function Invoke-SQLGeneric {
     param(
         [Parameter(Mandatory)][string]$ConnectionString,
         [Parameter(Mandatory)][string]$SQLCommand,
-        [Parameter(Mandatory)][ValidateSet("SQLAnywhere","Oracle","MSSQL","ODBC")]$DatabaseEngineClassMapName,
+        [Parameter(Mandatory)][ValidateSet("SQLAnywhere","Oracle","MSSQL","ODBC","ASE")]$DatabaseEngineClassMapName,
         [Switch]$ConvertFromDataRow
     )
     $ClassMap = Get-DatabaseEngineClassMap -Name $DatabaseEngineClassMapName
