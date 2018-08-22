@@ -363,7 +363,7 @@ function Invoke-SQLAnywhereSQL {
         [Parameter(Mandatory)][string]$SQLCommand,
         [Switch]$ConvertFromDataRow
     )
-    Invoke-SQLGeneric @PSBoundParameters -DatabaseEngineClassMapName = "SQLAnywhere"
+    Invoke-SQLGeneric @PSBoundParameters -DatabaseEngineClassMapName "SQLAnywhere"
 }
 
 function Install-InvokeOracleSQL {
