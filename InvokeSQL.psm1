@@ -361,10 +361,9 @@ function Invoke-SQLAnywhereSQL {
     param(
         [Parameter(Mandatory)][string]$ConnectionString,
         [Parameter(Mandatory)][string]$SQLCommand,
-        [ValidateSet("SQLAnywhere","Oracle","MSSQL")]$DatabaseEngineClassMapName = "SQLAnywhere",
         [Switch]$ConvertFromDataRow
     )
-    Invoke-SQLGeneric @PSBoundParameters
+    Invoke-SQLGeneric @PSBoundParameters -DatabaseEngineClassMapName = "SQLAnywhere"
 }
 
 function Install-InvokeOracleSQL {
