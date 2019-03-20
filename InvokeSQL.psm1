@@ -59,18 +59,16 @@ function ConvertFrom-DataRow {
         #Based on Dave Wyatt's code https://powershell.org/forums/topic/dealing-with-dbnull/
         $cSharp = @"
 using System;
-using System.Data;
-using System.Management.Automation;
 
 public class DBNullScrubber
 {
-    public static PSObject DataRowToPSObject(DataRow row)
+    public static System.Management.Automation.PSObject DataRowToPSObject(System.Data.DataRow row)
     {
-        PSObject psObject = new PSObject();
+        System.Management.Automation.PSObject psObject = new System.Management.Automation.PSObject();
 
-        if (row != null && (row.RowState & DataRowState.Detached) != DataRowState.Detached)
+        if (row != null && (row.RowState & System.Data.DataRowState.Detached) != System.Data.DataRowState.Detached)
         {
-            foreach (DataColumn column in row.Table.Columns)
+            foreach (System.Data.DataColumn column in row.Table.Columns)
             {
                 Object value = null;
                 if (!row.IsNull(column))
@@ -78,7 +76,7 @@ public class DBNullScrubber
                     value = row[column];
                 }
 
-                psObject.Properties.Add(new PSNoteProperty(column.ColumnName, value));
+                psObject.Properties.Add(new System.Management.Automation.PSNoteProperty(column.ColumnName, value));
             }
         }
 
@@ -88,7 +86,11 @@ public class DBNullScrubber
 "@      
     if (-not $Script:DBNullScrubberAdded) {
             $Script:DBNullScrubberAdded = $true
-            Add-Type -TypeDefinition $cSharp -ReferencedAssemblies 'System.Data','System.Xml'
+            if ($PSVersionTable.PSEdition -ne "Core") {
+                Add-Type -TypeDefinition $cSharp -ReferencedAssemblies 'System.Data','System.Xml'
+            } elseif ($PSVersionTable.PSEdition -eq "Core") {
+                Add-Type -TypeDefinition $cSharp
+            }
         }   
     }
     process {
