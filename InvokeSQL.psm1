@@ -339,7 +339,9 @@ function Invoke-SQLGeneric {
         $DataSet.Tables.Rows
     }
 
-    New-SQLCallLog -ConnectionString $ConnectionString -Command $SQLCommand -TimeSpan $StopWatch.Elapsed
+    if ($Global:LogSQL) {
+        New-SQLCallLog -ConnectionString $ConnectionString -Command $SQLCommand -TimeSpan $StopWatch.Elapsed
+    }
 }
 
 function New-SQLCallLog {
