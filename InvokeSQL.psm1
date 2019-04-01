@@ -429,3 +429,34 @@ function ConvertTo-SQLArrayFromCSV{
 
     "('$($Items -join "','")')"
 }
+
+function Invoke-OracleSQLWithParameters {
+    param(
+        [Parameter(Mandatory)][string]$ConnectionString,
+        [Parameter(Mandatory)][string]$SQLCommand,
+        [Parameter(Mandatory)]$OracleParameters
+    )
+    $ClassMap = Get-DatabaseEngineClassMap -Name "Oracle"
+    $NameSpace = $ClassMap.NameSpace
+    if ($ClassMap.AddTypeScriptBlock) { & $ClassMap.AddTypeScriptBlock }
+
+    $Connection = New-Object -TypeName "$NameSpace.$($ClassMap.Connection)" $ConnectionString
+    $Connection.Open()
+
+    $Command = New-Object "$NameSpace.$($ClassMap.Command)" $SQLCommand,$Connection
+    $OracleParameters | %{$Command.Parameters.Add($_) | Out-Null}
+    $Adapter = New-Object "$NameSpace.$($ClassMap.Adapter)" $Command
+    $Dataset = New-Object System.Data.DataSet
+
+    if ($Global:LogSQL) {
+        $StopWatch = [Diagnostics.Stopwatch]::StartNew()
+        $Adapter.Fill($DataSet) | Out-Null
+        $StopWatch.Stop()
+    } else {
+        $Adapter.Fill($DataSet) | Out-Null
+    }
+    $Connection.Close()
+    $OracleParameters
+
+    New-SQLCallLog -ConnectionString $ConnectionString -Command $SQLCommand -TimeSpan $StopWatch.Elapsed
+}
