@@ -460,3 +460,40 @@ function Invoke-OracleSQLWithParameters {
 
     New-SQLCallLog -ConnectionString $ConnectionString -Command $SQLCommand -TimeSpan $StopWatch.Elapsed
 }
+
+function Invoke-OracleStoredProcedureWithParameters {
+    param(
+        [Parameter(Mandatory)][string]$ConnectionString,
+        [Parameter(Mandatory)][string]$Procedurename,
+        
+        [Switch]$ConvertFromDataRow
+    )
+    $ClassMap = Get-DatabaseEngineClassMap -Name $DatabaseEngineClassMapName
+    $NameSpace = $ClassMap.NameSpace
+    if ($ClassMap.AddTypeScriptBlock) { & $ClassMap.AddTypeScriptBlock }
+
+    $Connection = New-Object -TypeName "$NameSpace.$($ClassMap.Connection)" $ConnectionString
+    $Command = New-Object "$NameSpace.$($ClassMap.Command)" $SQLCommand,$Connection
+    $Connection.Open()
+    
+    $Adapter = New-Object "$NameSpace.$($ClassMap.Adapter)" $Command
+    $Dataset = New-Object System.Data.DataSet
+
+    if ($Global:LogSQL) {
+        $StopWatch = [Diagnostics.Stopwatch]::StartNew()
+        $Adapter.Fill($DataSet) | Out-Null
+        $StopWatch.Stop()
+    } else {
+        $Adapter.Fill($DataSet) | Out-Null
+    }
+    
+    $Connection.Close()
+    
+    if ($ConvertFromDataRow -and ($DataSet.Tables.DataRow -or $DataSet.Tables.Rows)) {
+        $DataSet.Tables.Rows | ConvertFrom-DataRow
+    } elseif ($DataSet.Tables.Rows) {
+        $DataSet.Tables.Rows
+    }
+
+    New-SQLCallLog -ConnectionString $ConnectionString -Command $SQLCommand -TimeSpan $StopWatch.Elapsed
+}
