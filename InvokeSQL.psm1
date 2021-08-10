@@ -310,7 +310,8 @@ function Invoke-SQLGeneric {
         [Parameter(Mandatory)][string]$ConnectionString,
         [Parameter(Mandatory)][string]$SQLCommand,
         [Parameter(Mandatory)][ValidateSet("SQLAnywhere","Oracle","MSSQL","ODBC","ASE")]$DatabaseEngineClassMapName,
-        [Switch]$ConvertFromDataRow
+        [Switch]$ConvertFromDataRow,
+        $Parameters
     )
     $ClassMap = Get-DatabaseEngineClassMap -Name $DatabaseEngineClassMapName
     $NameSpace = $ClassMap.NameSpace
@@ -318,6 +319,23 @@ function Invoke-SQLGeneric {
 
     $Connection = New-Object -TypeName "$NameSpace.$($ClassMap.Connection)" $ConnectionString
     $Command = New-Object "$NameSpace.$($ClassMap.Command)" $SQLCommand,$Connection
+
+    if ($Parameters) {
+        # https://stackoverflow.com/questions/3876856/c-sharp-parameterized-queries-for-oracle-serious-dangerous-bug
+        $Command.BindByName = $true
+    }
+
+    if ($Parameters -is [hashtable]) {$
+        ForEach ($Key in $Parameters.Keys) {
+            $Command.Parameters.Add("$Key",$Parameters[$Key]) | Out-Null
+        }
+    } else {
+        foreach ($Parameter in $Parameters) {
+            # https://docs.oracle.com/cd/E85694_01/ODPNT/ParameterCtor5.htm
+            $Command.Parameters.Add($Parameter.ParameterName, $Parameter.DbType, $Parameter.Obj, $Parameter.Direction) | Out-Null
+        }
+    }
+
     $Connection.Open()
     
     $Adapter = New-Object "$NameSpace.$($ClassMap.Adapter)" $Command
@@ -410,7 +428,8 @@ function Invoke-OracleSQL {
     param(
         [Parameter(Mandatory)][string]$ConnectionString,
         [Parameter(Mandatory)][string]$SQLCommand,
-        [Switch]$ConvertFromDataRow
+        [Switch]$ConvertFromDataRow,
+        $Parameters
     )
     Invoke-SQLGeneric -DatabaseEngineClassMapName Oracle @PSBoundParameters
 }
